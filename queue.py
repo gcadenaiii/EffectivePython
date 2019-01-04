@@ -1,4 +1,109 @@
-""" part 2 of queue """
+""" Use Queue to Coordinate Work Between Threads """
+
+""" Example app - Take a stream of images from your digital camera
+, resize them, and then add them to a photo gallery online.  Split this into
+three phases of a pipeline.  Do this with a thread-safe producer-consumer
+queue.
+"""
+from threading import Lock
+from threading import Thread
+from collections import deque
+from time import sleep
+
+def download(item):
+    return item
+
+def resize(item):
+    return item
+
+def upload(item):
+    return item
+
+class MyQueue(object):
+    def __init__(self):
+        self.items = deque()
+        self.lock = Lock()
+
+    def put(self, item):
+        """ the producer, digital camera, adds new images to the end of the
+        list of pending items.
+        """
+        with self.lock:
+            self.items.append(item)
+
+    def get(self):
+        """ the consumer, the first phase of the pipeline, removes images
+        from the front of the list of pending items.
+        """
+        with self.lock:
+            return self.items.popleft()
+
+""" the idea behind the pipeline as a Python thread is to take work from one
+queue, run a function on it, and put the result on another queue. You can also
+track how many times the worker has checked for new input and how much work
+it has completed.
+"""
+
+class Worker(Thread):
+    def __init__(self, func, in_queue, out_queue):
+        super().__init__()
+        self.func = func
+        self.in_queue = in_queue
+        self.out_queue = out_queue
+        self.polled_count = 0
+        self.work_done = 0
+
+    """ the trickiest part is that the worker thread must properly handle the
+    case where the input queue is empty because the previous phase hasn't
+    completed its work yet.
+    """
+    def run(self):
+        while True:
+            self.polled_count += 1
+            try:
+                item = self.in_queue.get()
+            except IndexError:
+                sleep(0.1)  # No work to do
+            else:
+                print('Work done by %s...' % self.func.__name__)
+                result = self.func(item)
+                self.out_queue.put(result)
+                self.work_done += 1
+
+
+""" Connect the three phases together for the coordination and corresponding
+worker threads.
+"""
+
+download_queue = MyQueue()
+resize_queue = MyQueue()
+upload_queue = MyQueue()
+done_queue = MyQueue()
+
+threads = [
+    Worker(download, download_queue, resize_queue),
+    Worker(resize, resize_queue, upload_queue),
+    Worker(upload, upload_queue, done_queue)
+]
+
+""" Use a plain object as a proxy for the real data required by the download
+function.
+"""
+for thread in threads:
+    thread.start()
+
+objects = 1000
+for _ in range(objects):
+    download_queue.put(object())
+
+while len(done_queue.items) < objects:
+    # wait for all threads to complete
+    pass
+
+processed = len(done_queue.items)
+polled = sum(t.polled_count for t in threads)
+print('Processed', processed, 'items after polling',
+        polled, 'times')
 
 """
 When the worker functions vary in speeds an earlier phase can prevent
@@ -170,6 +275,38 @@ NOTE: Whenyou call queue.join() in the main thread, all it does is block the
 main threads until the workers have processed everything that's in that queue.
 It does not stop the worker threads, which continue executing their inf. loops.
 """
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

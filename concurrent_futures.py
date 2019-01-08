@@ -10,6 +10,8 @@ to do computation and returns results.
 
 from time import time
 from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ProcessPoolExecutor
+
 
 def gcd(pair):
     a, b = pair
@@ -35,4 +37,68 @@ pool = ThreadPoolExecutor(max_workers=4)
 result = list(pool.map(gcd, numbers))
 end = time()
 print('Took %.3f seconds' % (end - start))
+
+start = time()
+pool = ProcessPoolExecutor(max_workers=4)
+result = list(pool.map(gcd, numbers))
+end = time()
+print('Took %.3f seconds' % (end - start))
+
+""" The overhead of using multiprocessing is high because of all of the 
+serialization and deserialization that must happen between the child and 
+parent process.  This is well suited to certain types of isolated, high-
+leverage tasks:
+    + isolated: functions that don't need to share state with other parts
+    of the program.
+    + high-leverage: situations in which only a small amount of data must be 
+    transferred between the parent and child processes to enable a large 
+    amount of computation.
+"""
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
